@@ -32,6 +32,7 @@ def process_and_import_into_csv():
 def data_cleanup() -> dict[int, dict[str, str]]:
     raw_data = read_file()
     print("No of books in source file: " + str(len(raw_data)))
+    print()
     data = []
     # usuwane zostaje 9 rekordow z \ ktory nie poprzedza znaku zakodowanego jako utf-16
     for index in range(len(raw_data)):
@@ -40,14 +41,18 @@ def data_cleanup() -> dict[int, dict[str, str]]:
         except ValueError:
             pass
     print("No of books after initial cleanup: " + str(len(data)))
+    print()
     temp_dict = insert_data_into_dict(data)
     print("No of books without missing data: " + str(len(temp_dict.keys())))
+    print()
     temp_dict = remove_specific_and_broad_genres(temp_dict)
     print("No of books after removing too broad and too specific genres: " + str(len(temp_dict.keys())))
+    print()
     temp_dict = remove_overlapping_books(temp_dict)
     print("No of books after removing books with more than one classifiable genre: " + str(len(temp_dict.keys())))
+    print()
     # lista gatunkow
-    counts = count_genres(temp_dict)
+    counts = count_genres_occurrences(temp_dict)
     sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)
     print("Genre list with book counts: ")
     for item in sorted_counts:
@@ -88,7 +93,8 @@ def insert_data_into_dict(data: list[str]) -> dict[int, dict[str, list[str]]]:
         line_stripped = [line[index].strip() for index in (0, 2, 5, 6)]
         # usuwane zostaja rekordy, w ktorych interesujace wartosci sa puste lub ktore zawieraja podejrzane wartosci
         valid = line_stripped[0] != '' and line_stripped[1] != '' and line_stripped[2] != '' \
-            and line_stripped[3] != '' and line_stripped[3] != 'To be added.' and line_stripped[3].count("=") == 0 \
+            and line_stripped[3] != '' and line_stripped[3].count("To be added.") == 0 \
+            and line_stripped[3].count("=") == 0 and line_stripped[3].count("Plot outline description") == 0 \
             and line_stripped[3].count("\\") == 0 and line_stripped[3].count("/") == 0 \
             and line_stripped[3].count("<") == 0 and line_stripped[3].count("&ndash;") == 0 \
             and line_stripped[3].count("&mdash;") == 0 and line_stripped[3].count("&nbsp;") == 0 \
@@ -102,7 +108,7 @@ def insert_data_into_dict(data: list[str]) -> dict[int, dict[str, list[str]]]:
 
 
 # zliczanie wystapien kazdego z gatunkow
-def count_genres(temp_dict: dict[int, dict[str, list[str]]]) -> dict[str, int]:
+def count_genres_occurrences(temp_dict: dict[int, dict[str, list[str]]]) -> dict[str, int]:
     counts = {}
     for book in temp_dict.values():
         for genre in book['genres']:
@@ -115,7 +121,7 @@ def count_genres(temp_dict: dict[int, dict[str, list[str]]]) -> dict[str, int]:
 
 # usuniecie gatunkow, ktore sa zbyt szerokie lub zbyt waskie
 def remove_specific_and_broad_genres(temp_dict: dict[int, dict[str, list[str]]]) -> dict[int, dict[str, list[str]]]:
-    counts = count_genres(temp_dict)
+    counts = count_genres_occurrences(temp_dict)
     for book in temp_dict.values():
         for genre in deepcopy(book['genres']):
             # zbyt waskie gatunki maja mniej niz 500 wystapien, zbyt szerokie wiecej niz 3000
@@ -131,7 +137,7 @@ def remove_specific_and_broad_genres(temp_dict: dict[int, dict[str, list[str]]])
 
 # usuniecie ksiazek, ktore maja przypisane kilka z gatunkow z listy
 def remove_overlapping_books(temp_dict: dict[int, dict[str, list[str]]]) -> dict[int, dict[str, list[str]]]:
-    counts = count_genres(temp_dict)
+    counts = count_genres_occurrences(temp_dict)
     helper = deepcopy(temp_dict)
     for key in helper:
         genre_count = 0
