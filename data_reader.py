@@ -1,30 +1,58 @@
 import io
 import json
+import csv
+import pandas
 from copy import deepcopy
 
 
-# TODO zapis danych do pliku csv po calym procesie preprocessingu
-def import_into_csv():
+# czytanie z utworzonego w metodzie process_and_import_into_csv pliku csv
+def read_from_csv() -> dict[int, dict[str, str]]:
+    # 0 - klucz, 1 - tytul, 2 - gatunek, 3 - streszczenie
+    data_frame = pandas.read_csv('booksummaries/processed_data.csv', header=None)
+    dataset = {}
+    for line_index in data_frame.index:
+        dataset[int(data_frame.loc[line_index, 0])] = {'title': str(data_frame.loc[line_index, 1]),
+                                                       'genre': str(data_frame.loc[line_index, 2]),
+                                                       'summary': str(data_frame.loc[line_index, 3])}
+    return dataset
+
+
+# preprocessing i zapis danych do pliku csv
+def process_and_import_into_csv():
+    dataset = data_cleanup()
+    dataset_as_array = []
+    for key in dataset:
+        dataset_as_array.append([key, dataset[key]['title'], dataset[key]['genre'], dataset[key]['summary']])
+    with open('booksummaries/processed_data.csv', 'w', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(dataset_as_array)
+
+
+# czyszczenie danych
+def data_cleanup() -> dict[int, dict[str, str]]:
     raw_data = read_file()
     print("No of books in source file: " + str(len(raw_data)))
-    initial_cleanup = []
+    data = []
     # usuwane zostaje 9 rekordow z \ ktory nie poprzedza znaku zakodowanego jako utf-16
     for index in range(len(raw_data)):
         try:
-            initial_cleanup.append(utf_16_to_utf_8_conversion(raw_data[index]))
+            data.append(utf_16_to_utf_8_conversion(raw_data[index]))
         except ValueError:
             pass
-    print("No of books after initial cleanup: " + str(len(initial_cleanup)))
-    temp_dict = insert_data_into_dict(initial_cleanup)
+    print("No of books after initial cleanup: " + str(len(data)))
+    temp_dict = insert_data_into_dict(data)
     print("No of books without missing data: " + str(len(temp_dict.keys())))
     temp_dict = remove_specific_and_broad_genres(temp_dict)
     print("No of books after removing too broad and too specific genres: " + str(len(temp_dict.keys())))
+    temp_dict = remove_overlapping_books(temp_dict)
+    print("No of books after removing books with more than one classifiable genre: " + str(len(temp_dict.keys())))
     # lista gatunkow
     counts = count_genres(temp_dict)
     sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)
-    print("Genre list with counts: ")
+    print("Genre list with book counts: ")
     for item in sorted_counts:
         print("\t" + item[0] + " " + str(item[1]))
+    return insert_into_final_dataset(temp_dict)
 
 
 # czytanie surowych danych z pliku zrodlowego
@@ -91,7 +119,7 @@ def remove_specific_and_broad_genres(temp_dict: dict[int, dict[str, list[str]]])
     for book in temp_dict.values():
         for genre in deepcopy(book['genres']):
             # zbyt waskie gatunki maja mniej niz 500 wystapien, zbyt szerokie wiecej niz 3000
-            if counts[genre] < 500 or counts[genre] > 3000:
+            if counts[genre] < 1000 or counts[genre] > 3000:
                 book['genres'].remove(genre)
     helper = deepcopy(temp_dict)
     # usuniecie ksiazek, ktore w wyniku czyszczenia gatunkow nie maja juz przypisanego zadnego gatunku
@@ -99,3 +127,31 @@ def remove_specific_and_broad_genres(temp_dict: dict[int, dict[str, list[str]]])
         if len(temp_dict[key]['genres']) == 0:
             temp_dict.pop(key)
     return temp_dict
+
+
+# usuniecie ksiazek, ktore maja przypisane kilka z gatunkow z listy
+def remove_overlapping_books(temp_dict: dict[int, dict[str, list[str]]]) -> dict[int, dict[str, list[str]]]:
+    counts = count_genres(temp_dict)
+    helper = deepcopy(temp_dict)
+    for key in helper:
+        genre_count = 0
+        for genre in helper[key]['genres']:
+            if genre in counts:
+                genre_count += 1
+            if genre_count > 1:
+                temp_dict.pop(key)
+                break
+    return temp_dict
+
+
+# TODO byc moze metoda ktora wywali z 500 losowych novel i z 500 losowych science fiction
+
+
+# konwersja do ostatecznej reprezentacji danych
+def insert_into_final_dataset(temp_dict: dict[int, dict[str, list[str]]]) -> dict[int, dict[str, str]]:
+    dataset = {}
+    for key in temp_dict:
+        dataset[key] = {'title': temp_dict[key]['title'][0],
+                        'genre': temp_dict[key]['genres'][0],
+                        'summary': temp_dict[key]['summary'][0]}
+    return dataset
