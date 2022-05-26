@@ -1,3 +1,6 @@
+from data_reader import read_file, utf_16_to_utf_8_conversion, insert_data_into_dict, remove_specific_and_broad_genres
+
+
 # analiza zbioru danych
 def dataset_analysis(dataset: dict[int, dict[str, str]]):
     print("Dataset size: " + str(len(dataset)))
@@ -29,6 +32,14 @@ def dataset_analysis(dataset: dict[int, dict[str, str]]):
     print("10 most common words: ")
     for index in range(10):
         print("\t" + sorted_counts[index][0] + " " + str(sorted_counts[index][1]))
+    print()
+    counts = count_overlapping_genres()
+    print("No of books with multiple assigned genres: ")
+    for genre in counts:
+        print("\t" + genre)
+        sorted_counts = sorted(counts[genre].items(), key=lambda x: x[1], reverse=True)
+        for item in sorted_counts:
+            print("\t\t" + item[0] + " " + str(item[1]))
 
 
 # zliczanie wystapien kazdego z gatunkow
@@ -110,3 +121,30 @@ def is_word(string: str) -> bool:
         if (string[i].lower() < "a" or string[i].lower() > "z") and string[i] != "'":
             return False
     return True
+
+
+# sprawdzenie jakie gatunki i ile razy sa przypisane do ksiazki razem z innym gatunkiem
+def count_overlapping_genres() -> dict[str, dict[str, int]]:
+    raw_data = read_file()
+    data = []
+    # usuwane zostaje 9 rekordow z \ ktory nie poprzedza znaku zakodowanego jako utf-16
+    for index in range(len(raw_data)):
+        try:
+            data.append(utf_16_to_utf_8_conversion(raw_data[index]))
+        except ValueError:
+            pass
+    temp_dict = insert_data_into_dict(data)
+    temp_dict = remove_specific_and_broad_genres(temp_dict)
+    counts = {}
+    for book in temp_dict.values():
+        for genre in book['genres']:
+            if genre in counts:
+                for other_genre in book['genres']:
+                    if genre != other_genre:
+                        if other_genre in counts[genre]:
+                            counts[genre][other_genre] += 1
+                        else:
+                            counts[genre][other_genre] = 1
+            else:
+                counts[genre] = {}
+    return counts

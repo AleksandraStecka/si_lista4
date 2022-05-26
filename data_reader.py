@@ -149,10 +149,6 @@ def remove_overlapping_books(temp_dict: dict[int, dict[str, list[str]]]) -> dict
                 break
     return temp_dict
 
-
-# TODO byc moze metoda ktora wywali z 500 losowych novel i z 500 losowych science fiction
-
-
 # konwersja do ostatecznej reprezentacji danych
 def insert_into_final_dataset(temp_dict: dict[int, dict[str, list[str]]]) -> dict[int, dict[str, str]]:
     dataset = {}
