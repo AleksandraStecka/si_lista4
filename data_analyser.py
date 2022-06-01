@@ -3,14 +3,19 @@ from data_reader import read_file, utf_16_to_utf_8_conversion, insert_data_into_
 
 # analiza zbioru danych
 def dataset_analysis(dataset: dict[int, dict[str, str]]):
+    # rozmiar zbioru danych
     print("Dataset size: " + str(len(dataset)))
     print()
+
+    # lista gatunkow, do ktorych kategoryzowane beda ksiazki
     counts = count_genres_occurrences(dataset)
     sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)
     print("Genre list with book counts: ")
     for item in sorted_counts:
         print("\t" + item[0] + " " + str(item[1]))
     print()
+
+    # analiza streszczen - dlugosci w liczbie slowa i liczbie znakow
     print("Average no of words per summary: " + str(get_avg_word_count(dataset)))
     word_len_occurrences = count_len_words_occurrences(dataset)
     sorted_word_lens = sorted(word_len_occurrences.items(), key=lambda x: x[1], reverse=True)
@@ -27,12 +32,26 @@ def dataset_analysis(dataset: dict[int, dict[str, str]]):
     print("Max no of characters in summary: " + str(sorted_char_lens[0][0]))
     print("Min no of characters in summary: " + str(sorted_char_lens[len(sorted_char_lens) - 1][0]))
     print()
+
+    # 10 najczesciej wystepujacych slow
     counts = count_words_occurrences(dataset)
     sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)
     print("10 most common words: ")
     for index in range(10):
         print("\t" + sorted_counts[index][0] + " " + str(sorted_counts[index][1]))
     print()
+
+    # 10 najczesciej wystepujacych slow dla kazdego z gatunkow
+    counts = count_word_occurrences_for_genre(dataset)
+    print("10 most common words for each genre: ")
+    for genre in counts:
+        sorted_counts = sorted(counts[genre].items(), key=lambda x: x[1], reverse=True)
+        print("\t" + genre)
+        for index in range(10):
+            print("\t\t" + sorted_counts[index][0] + " " + str(sorted_counts[index][1]))
+    print()
+
+    # liczba ksiazek z przypisanymi kilkoma gatunkami
     counts = count_overlapping_genres()
     print("No of books with multiple assigned genres: ")
     for genre in counts:
@@ -147,4 +166,21 @@ def count_overlapping_genres() -> dict[str, dict[str, int]]:
                             counts[genre][other_genre] = 1
             else:
                 counts[genre] = {}
+    return counts
+
+
+# sprawdzenie jakie slowa wystepuja najczesciej dla poszczegolnych gatunkow
+def count_word_occurrences_for_genre(dataset: dict[int, dict[str, str]]) -> dict[str, dict[str, int]]:
+    counts = {}
+    for book in dataset.values():
+        words = book['summary'].split()
+        for word in words:
+            if book['genre'] in counts:
+                word = word.lower()
+                if word in counts[book['genre']]:
+                    counts[book['genre']][word] += 1
+                elif is_word(word):
+                    counts[book['genre']][word] = 1
+            else:
+                counts[book['genre']] = {}
     return counts

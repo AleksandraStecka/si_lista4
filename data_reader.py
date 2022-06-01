@@ -2,7 +2,15 @@ import io
 import json
 import csv
 import pandas
+import re
 from copy import deepcopy
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+from nltk.stem import WordNetLemmatizer
+# zeby pakiety z nltk dzialaly trzeba wpisac komendy:
+# python -m nltk.downloader stopwords
+# python -m nltk.downloader wordnet
+# python -m nltk.downloader omw-1.4
 
 
 # czytanie z utworzonego w metodzie process_and_import_into_csv pliku csv
@@ -57,6 +65,7 @@ def data_cleanup() -> dict[int, dict[str, str]]:
     print("Genre list with book counts: ")
     for item in sorted_counts:
         print("\t" + item[0] + " " + str(item[1]))
+    print()
     return insert_into_final_dataset(temp_dict)
 
 
@@ -100,6 +109,22 @@ def insert_data_into_dict(data: list[str]) -> dict[int, dict[str, list[str]]]:
             and line_stripped[3].count("&mdash;") == 0 and line_stripped[3].count("&nbsp;") == 0 \
             and line_stripped[3].count("&#") == 0 and line_stripped[3].count("http") == 0
         if valid:
+            # preprocessing
+            # zamiana wszystkich liter na male litery
+            line_stripped[3] = line_stripped[3].lower()
+            # usuniecie slow stopu np the, to, i, can itd
+            stop = stopwords.words('english')
+            line_stripped[3] = " ".join([word for word in line_stripped[3].split() if word not in stop])
+            # usuwanie koncowek gramatycznych ze slow (po prostu usuwajac koncowke)
+            stemmer = PorterStemmer()
+            line_stripped[3] = " ".join([stemmer.stem(word) for word in line_stripped[3].split()])
+            # usuwanie koncowek gramatycznych ze slow i pozostawienie tylko podstawy slowotworczej
+            lemmatizer = WordNetLemmatizer()
+            line_stripped[3] = " ".join([lemmatizer.lemmatize(word) for word in line_stripped[3].split()])
+            # usuniecie znakow interpunkcyjnych
+            line_stripped[3] = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?",
+                                      "", line_stripped[3])
+            # zapis danych
             nested_dict = {'title': [line_stripped[1]],
                            'genres': [genre for genre in json.loads(line_stripped[2]).values()],
                            'summary': [line_stripped[3]]}
@@ -148,6 +173,7 @@ def remove_overlapping_books(temp_dict: dict[int, dict[str, list[str]]]) -> dict
                 temp_dict.pop(key)
                 break
     return temp_dict
+
 
 # konwersja do ostatecznej reprezentacji danych
 def insert_into_final_dataset(temp_dict: dict[int, dict[str, list[str]]]) -> dict[int, dict[str, str]]:

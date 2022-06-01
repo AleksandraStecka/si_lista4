@@ -4,6 +4,6 @@ from data_analyser import dataset_analysis
 
 
 if __name__ == '__main__':
-    # process_and_import_into_csv()
+    process_and_import_into_csv()
     dataset = read_from_csv()
     dataset_analysis(dataset)
