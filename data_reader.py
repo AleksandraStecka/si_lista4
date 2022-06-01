@@ -115,12 +115,12 @@ def insert_data_into_dict(data: list[str]) -> dict[int, dict[str, list[str]]]:
             # usuniecie slow stopu np the, to, i, can itd
             stop = stopwords.words('english')
             line_stripped[3] = " ".join([word for word in line_stripped[3].split() if word not in stop])
-            # usuwanie koncowek gramatycznych ze slow (po prostu usuwajac koncowke)
-            stemmer = PorterStemmer()
-            line_stripped[3] = " ".join([stemmer.stem(word) for word in line_stripped[3].split()])
             # usuwanie koncowek gramatycznych ze slow i pozostawienie tylko podstawy slowotworczej
             lemmatizer = WordNetLemmatizer()
             line_stripped[3] = " ".join([lemmatizer.lemmatize(word) for word in line_stripped[3].split()])
+            # usuwanie koncowek gramatycznych ze slow (po prostu usuwajac koncowke)
+            stemmer = PorterStemmer()
+            line_stripped[3] = " ".join([stemmer.stem(word) for word in line_stripped[3].split()])
             # usuniecie znakow interpunkcyjnych
             line_stripped[3] = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?",
                                       "", line_stripped[3])
