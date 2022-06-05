@@ -51,7 +51,7 @@ def tuning_mnb():
 # klasyfikator naive bayes
 def multinomial_naive_bayes(train_size: float, max_df: float, min_df: float, max_f: int, ngram_range: (int, int),
                             alpha: float):
-    multinomial_naive_bayes_reg(True, train_size, max_df, min_df, max_f, ngram_range, alpha)
+    # multinomial_naive_bayes_reg(True, train_size, max_df, min_df, max_f, ngram_range, alpha)
     multinomial_naive_bayes_cross_val(True, max_df, min_df, max_f, ngram_range, alpha)
 
 
@@ -181,6 +181,7 @@ def tuning_svm():
                                 best_params['ngram_range'] = ngram_range
                                 best_params['c'] = c
                                 best_params['loss'] = loss
+    print("------------------------------------------------- TUNING SUPPORT VECTOR MACHINES")
     print("------------------------------------------------- TUNING MULTINOMIAL NAIVE BAYES")
     print("Best mean: " + str(round(best_mean, 3)))
     print("Parameters for best mean: ")
@@ -192,7 +193,7 @@ def tuning_svm():
 # maszyna wektorow nosnych
 def support_vector_machine(train_size: float, max_df: float, min_df: float, max_f: int, ngram_range: (int, int),
                            c: float, loss: str):
-    support_vector_machine_reg(True, train_size, max_df, min_df, max_f, ngram_range, c, loss)
+    # support_vector_machine_reg(True, train_size, max_df, min_df, max_f, ngram_range, c, loss)
     support_vector_machine_cross_val(True, max_df, min_df, max_f, ngram_range, c, loss)
 
 

@@ -149,6 +149,10 @@ def remove_specific_and_broad_genres(temp_dict: dict[int, dict[str, list[str]]])
     counts = count_genres_occurrences(temp_dict)
     for book in temp_dict.values():
         for genre in deepcopy(book['genres']):
+            # if counts[genre] < 1000 or counts[genre] > 2000: -> 2
+            # if counts[genre] < 1000 or counts[genre] > 3000: -> 5
+            # if counts[genre] < 1000: -> 7
+            # if counts[genre] < 500 or counts[genre] > 3000: -> 10
             # zbyt waskie gatunki maja mniej niz 500 wystapien, zbyt szerokie wiecej niz 3000
             if counts[genre] < 1000 or counts[genre] > 3000:
                 book['genres'].remove(genre)
