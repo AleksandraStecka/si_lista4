@@ -32,7 +32,8 @@ def tuning_mnb():
             for max_f in max_f_params:
                 for ngram_range in ngram_range_params:
                     for alpha in alpha_params:
-                        new_mean = multinomial_naive_bayes_cross_val(False, max_df, min_df, max_f, ngram_range, alpha)
+                        new_mean = multinomial_naive_bayes_cross_val(False, max_df, min_df, max_f, ngram_range, True,
+                                                                     alpha)
                         if new_mean > best_mean:
                             best_mean = new_mean
                             best_params['max_df'] = max_df
@@ -51,12 +52,12 @@ def tuning_mnb():
 # klasyfikator naive bayes
 def multinomial_naive_bayes(train_size: float, max_df: float, min_df: float, max_f: int, ngram_range: (int, int),
                             alpha: float):
-    # multinomial_naive_bayes_reg(True, train_size, max_df, min_df, max_f, ngram_range, alpha)
-    multinomial_naive_bayes_cross_val(True, max_df, min_df, max_f, ngram_range, alpha)
+    # multinomial_naive_bayes_reg(True, train_size, max_df, min_df, max_f, ngram_range, True, alpha)
+    multinomial_naive_bayes_cross_val(True, max_df, min_df, max_f, ngram_range, True, alpha)
 
 
 def multinomial_naive_bayes_reg(verbose: bool, train_size: float, max_df: float, min_df: float, max_f: int,
-                                ngram_range: (int, int), alpha: float) -> float:
+                                ngram_range: (int, int), use_idf: bool, alpha: float) -> float:
     if verbose:
         print("-------------------------------------------------------- MULTINOMIAL NAIVE BAYES")
         print("------------------------------------------------------------ no cross validation")
@@ -77,7 +78,7 @@ def multinomial_naive_bayes_reg(verbose: bool, train_size: float, max_df: float,
     # tf = czestosc wystepowania slowa w dokumencie
     # tf-idf = czestosc wystepowania slowa w dokumencie w stosunku do rozmiaru dokumentu
     # korzystam z tf-idf bo streszczenia fabuly maja rozna dlugosc
-    tfidf_transformer = TfidfTransformer(use_idf=True)
+    tfidf_transformer = TfidfTransformer(use_idf=use_idf)
     x_train_tfidf = tfidf_transformer.fit_transform(x_train_counts)
     # utworzenie i wyuczenie modelu uczenia maszynowego
     # model jest uczony na odpowiednio przygotowanym zbiorze danych wejsciowych i zbioru wyjsc dla kazdego wejscia
@@ -121,7 +122,7 @@ def multinomial_naive_bayes_reg(verbose: bool, train_size: float, max_df: float,
 
 
 def multinomial_naive_bayes_cross_val(verbose: bool, max_df: float, min_df: float, max_f: int, ngram_range: (int, int),
-                                      alpha: float) -> float:
+                                      use_idf: bool, alpha: float) -> (float, float, float):
     if verbose:
         print("-------------------------------------------------------- MULTINOMIAL NAIVE BAYES")
         print("--------------------------------------------------------------- cross validation")
@@ -131,11 +132,13 @@ def multinomial_naive_bayes_cross_val(verbose: bool, max_df: float, min_df: floa
     # zgodnie z wymaganiami w liscie zadan dokonywana jest 10-krotna walidacja krzyzowa
     count_vectorizer = CountVectorizer(max_df=max_df, min_df=min_df, max_features=max_f, ngram_range=ngram_range)
     x_train_counts_full = count_vectorizer.fit_transform(dataset['summary'])
-    tfidf_transformer = TfidfTransformer(use_idf=True)
+    tfidf_transformer = TfidfTransformer(use_idf=use_idf)
     x_train_tfidf_full = tfidf_transformer.fit_transform(x_train_counts_full)
     ml_model = MultinomialNB(alpha=alpha)
     cross_validation = cross_validate(ml_model, x_train_tfidf_full, dataset['genre'], cv=10)
     pred_accuracy_mean = numpy.mean(cross_validation['test_score'])
+    fit_time_mean = numpy.mean(cross_validation['fit_time'])
+    pred_time_mean = numpy.mean(cross_validation['score_time'])
     if verbose:
         print("Fit times for each iteration:")
         for element in cross_validation['fit_time']:
@@ -152,7 +155,7 @@ def multinomial_naive_bayes_cross_val(verbose: bool, max_df: float, min_df: floa
         print("Prediction accuracy mean: ", end="")
         print(round(pred_accuracy_mean, 3))
         print()
-    return pred_accuracy_mean
+    return pred_accuracy_mean, fit_time_mean, pred_time_mean
 
 
 # dostrajanie hiperparametrow dla maszyny wektorow nosnych
@@ -171,8 +174,8 @@ def tuning_svm():
                 for ngram_range in ngram_range_params:
                     for c in c_params:
                         for loss in loss_params:
-                            new_mean = support_vector_machine_cross_val(False, max_df, min_df, max_f, ngram_range, c,
-                                                                        loss)
+                            new_mean = support_vector_machine_cross_val(False, max_df, min_df, max_f, ngram_range,
+                                                                        True, c, loss)
                             if new_mean > best_mean:
                                 best_mean = new_mean
                                 best_params['max_df'] = max_df
@@ -193,12 +196,12 @@ def tuning_svm():
 # maszyna wektorow nosnych
 def support_vector_machine(train_size: float, max_df: float, min_df: float, max_f: int, ngram_range: (int, int),
                            c: float, loss: str):
-    # support_vector_machine_reg(True, train_size, max_df, min_df, max_f, ngram_range, c, loss)
-    support_vector_machine_cross_val(True, max_df, min_df, max_f, ngram_range, c, loss)
+    # support_vector_machine_reg(True, train_size, max_df, min_df, max_f, ngram_range, True, c, loss)
+    support_vector_machine_cross_val(True, max_df, min_df, max_f, ngram_range, True, c, loss)
 
 
 def support_vector_machine_reg(verbose: bool, train_size: float, max_df: float, min_df: float, max_f: int,
-                               ngram_range: (int, int), c: float, loss: str) -> float:
+                               ngram_range: (int, int), use_idf: bool, c: float, loss: str) -> float:
     if verbose:
         print("--------------------------------------------------------- SUPPORT VECTOR MACHINE")
         print("------------------------------------------------------------ no cross validation")
@@ -219,7 +222,7 @@ def support_vector_machine_reg(verbose: bool, train_size: float, max_df: float, 
     # tf = czestosc wystepowania slowa w dokumencie
     # tf-idf = czestosc wystepowania slowa w dokumencie w stosunku do rozmiaru dokumentu
     # korzystam z tf-idf bo streszczenia fabuly maja rozna dlugosc
-    tfidf_transformer = TfidfTransformer(use_idf=True)
+    tfidf_transformer = TfidfTransformer(use_idf=use_idf)
     x_train_tfidf = tfidf_transformer.fit_transform(x_train_counts)
     # utworzenie i wyuczenie modelu uczenia maszynowego
     # model jest uczony na odpowiednio przygotowanym zbiorze danych wejsciowych i zbioru wyjsc dla kazdego wejscia
@@ -267,7 +270,7 @@ def support_vector_machine_reg(verbose: bool, train_size: float, max_df: float, 
 
 
 def support_vector_machine_cross_val(verbose: bool, max_df: float, min_df: float, max_f: int, ngram_range: (int, int),
-                                     c: float, loss: str) -> float:
+                                     use_idf: bool, c: float, loss: str) -> (float, float, float):
     if verbose:
         print("--------------------------------------------------------- SUPPORT VECTOR MACHINE")
         print("--------------------------------------------------------------- cross validation")
@@ -277,11 +280,13 @@ def support_vector_machine_cross_val(verbose: bool, max_df: float, min_df: float
     # zgodnie z wymaganiami w liscie zadan dokonywana jest 10-krotna walidacja krzyzowa
     count_vectorizer = CountVectorizer(max_df=max_df, min_df=min_df, max_features=max_f, ngram_range=ngram_range)
     x_train_counts_full = count_vectorizer.fit_transform(dataset['summary'])
-    tfidf_transformer = TfidfTransformer(use_idf=True)
+    tfidf_transformer = TfidfTransformer(use_idf=use_idf)
     x_train_tfidf_full = tfidf_transformer.fit_transform(x_train_counts_full)
     ml_model = LinearSVC(class_weight='balanced', C=c, loss=loss)
     cross_validation = cross_validate(ml_model, x_train_tfidf_full, dataset['genre'], cv=10)
     pred_accuracy_mean = numpy.mean(cross_validation['test_score'])
+    fit_time_mean = numpy.mean(cross_validation['fit_time'])
+    pred_time_mean = numpy.mean(cross_validation['score_time'])
     if verbose:
         print("Fit times for each iteration:")
         for element in cross_validation['fit_time']:
@@ -298,4 +303,4 @@ def support_vector_machine_cross_val(verbose: bool, max_df: float, min_df: float
         print("Prediction accuracy mean: ", end="")
         print(round(pred_accuracy_mean, 3))
         print()
-    return pred_accuracy_mean
+    return pred_accuracy_mean, fit_time_mean, pred_time_mean
